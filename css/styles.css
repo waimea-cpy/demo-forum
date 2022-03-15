@@ -37,7 +37,7 @@ body {
     background:  var(--back-main);
     color:       var(--text-inv);
 
-    background-image:    url('../images/manga-bw.jpg');
+    background-image:    url('../images/back.jpg');
     /* background-image:    url('../images/manga-grey.jpg'); */
     /* background-image: url('../images/megaphone.webp'); */
     /* background-image:    url('../images/shout.jpg'); */

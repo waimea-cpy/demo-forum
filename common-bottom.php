@@ -2,7 +2,7 @@
 
 <?php
     require_once 'common-functions.php';
-    showDebugInfo();
+    // showDebugInfo();
 ?>
     
 </body>
