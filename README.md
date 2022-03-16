@@ -22,22 +22,22 @@ Site has a simple but responsive UI, including:
 
 Post Feed
 
-![Post Feed](images/ui-feed.png)
+![Post Feed](ui/ui-feed.png)
 
 Post List
 
-![Post List](images/ui-list.png)
+![Post List](ui/ui-list.png)
 
 Post View
 
-![Post View](images/ui-view.png)
+![Post View](ui/ui-view.png)
 
 New Post
 
-![New Post](images/ui-new.png)
+![New Post](ui/ui-new.png)
 
 Menu
 
-![Menu](images/ui-menu.png)
+![Menu](ui/ui-menu.png)
 
 
