@@ -3,6 +3,11 @@
     require_once 'common-top.php';
 
     // Get the top-level posts (parent is NULL)
+
+    // The funky query-within-a-query looks up all posts that have 
+    // a parent id equal to id of the top-level post (using 'parentID' alias)
+    // and then the COUNT(...) function counst the records. This count is
+    // given the alias 'replies' and it is used below to show the reply count
     $sql = 'SELECT posts.id AS parentID,
                    posts.title,
                    posts.body,
@@ -27,6 +32,7 @@
 
     echo '<section id="post-list" class="summary">';
 
+    // Loop thru all top-level posts
     foreach( $posts as $post ) {
 
         $date = new DateTime( $post['timestamp'] );

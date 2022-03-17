@@ -22,6 +22,7 @@
 
     echo '<section id="post-list">';
 
+    // Loop thriugh the top-level posts
     foreach( $posts as $post ) {
 
         $date = new DateTime( $post['timestamp'] );
@@ -49,14 +50,14 @@
 
 <?php
 
-        // Get the top-level posts (parent is NULL)
+        // Get the replies (parent is same as the parent post)
         $sql = 'SELECT posts.id,
-                    posts.title,
-                    posts.body,
-                    posts.timestamp,
-                    users.username,
-                    users.forename,
-                    users.surname 
+                       posts.title,
+                       posts.body,
+                       posts.timestamp,
+                       users.username,
+                       users.forename,
+                       users.surname 
 
                 FROM posts
                 JOIN users ON posts.user = users.id 
@@ -69,6 +70,7 @@
 
         echo '<ol class="replies">';
 
+        // Loop through the replies
         foreach( $replies as $reply ) {
 
             $date = new DateTime( $reply['timestamp'] );
@@ -94,13 +96,17 @@
 
         echo '</ol>';
 
+        // Show a reply form if user is logged in
         if( $loggedIn ) {
 ?>
             <form method="POST" action="process-new-post.php" class="inline">
                 <img src="images/new.svg" alt="speech bubble">
+
                 <input name="parent" type="hidden" value="<?= $post['id'] ?>">
                 <input name="title" type="hidden" value="null" >
+                
                 <textarea name="body" placeholder="Your reply..."></textarea>
+                
                 <input type="submit" value="Reply">
             </form>
 <?php

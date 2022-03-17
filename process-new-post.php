@@ -13,6 +13,9 @@
     // Check for top-level post, and make sure parent is actually null, not a string!
     if( $_POST['parent'] == 'null' ) $_POST['parent'] = null;
 
+    // Check for a reply, and make sure title is actually null, not a string!
+    if( $_POST['title'] == 'null' ) $_POST['title'] = null;
+
     // Setup query
     $sql = 'INSERT INTO posts (title, body, parent, user)
             VALUES (?, ?, ?, ?)';
