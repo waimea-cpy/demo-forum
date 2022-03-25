@@ -5,7 +5,7 @@
  * Steve Copley
  * Digital Technologies Dept.
  * 
- * Version: 2.1 (March 2022)
+ * Version: 2.2 (March 2022)
  * 
  * Functions to:
  *   - Connect to MySQL server databases
@@ -17,6 +17,7 @@
  *------------------------------------------------------------- 
  * History:
  * 
+ *  2.2 (2022-03-15) - Added check for folder trailing slash in file upload
  *  2.1 (2022-03-03) - Added session name to session info display
  *  2.0 (2022-02-16) - Code cleanup, new DB config file format, more defaults
  *  1.7 (2021-08-23) - Fixed some CSS bugs in the debug panel
@@ -251,7 +252,11 @@ function uploadFile( $file, $folder, $random=false ) {
         $targetFilename = strtolower( $filename );
     }
 
-    $targetFilePath = $folder.$targetFilename;  // Piece together the path
+    // Check if folder has trailing slash and add one if not
+    if( strcmp( $folder[-1], '/' ) !== 0 ) $folder .= '/';
+
+    // Piece together the final save path
+    $targetFilePath = $folder.$targetFilename;  
 
     // Check if the file is already on server (possible if not a random filename)
     if( file_exists( $targetFilePath ) ) showErrorAndDie( 'A file with that name already exists' );

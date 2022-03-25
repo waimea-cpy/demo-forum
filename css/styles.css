@@ -47,11 +47,6 @@ body {
     background-size:       cover;
 }
 
-a {
-    text-decoration: none;
-    color:           var(--text-col);
-}
-
 h2 {
     font-size:     2.2rem;
     margin-bottom: 2rem;

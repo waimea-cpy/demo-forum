@@ -23,9 +23,7 @@
             FROM posts
             JOIN users ON posts.user = users.id 
 
-            WHERE parent IS NULL AND posts.id=?
-
-            ORDER BY timestamp DESC';
+            WHERE parent IS NULL AND posts.id=?';
 
     $posts = getRecords( $sql, 'i', [$postID] );
 
@@ -60,7 +58,7 @@
 
 <?php
 
-        // Get the top-level posts (parent is NULL)
+        // Get the replies (parent is same as the current post)
         $sql = 'SELECT posts.id,
                     posts.title,
                     posts.body,
@@ -80,6 +78,7 @@
 
         echo '<ol class="replies">';
 
+        // Run through all the replies
         foreach( $replies as $reply ) {
 
             $date = new DateTime( $reply['timestamp'] );
@@ -105,6 +104,7 @@
 
         echo '</ol>';
 
+        // Show a reply form if user is logged in
         if( $loggedIn ) {
 ?>
             <form method="POST" action="process-new-post.php" class="inline">
