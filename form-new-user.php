@@ -4,30 +4,32 @@
 
 ?>
 
-<form class="card" method="POST" action="process-new-user.php">
+<section>
+    <form method="POST" action="process-new-user.php">
 
-    <h2>Create a New Account</h2>
+        <header>
+            <h2>Create a New Account</h2>
+        </header>
 
-    <label>Forename</label>
-    <input name="forename" type="text" required>
+        <label>Forename</label>
+        <input name="forename" type="text" required>
 
-    <label>Surname</label>
-    <input name="surname" type="text" required>
+        <label>Surname</label>
+        <input name="surname" type="text" required>
 
-    <label>Username</label>
-    <input name="username" type="text" required>
+        <label>Username</label>
+        <input name="username" type="text" required>
 
-    <label>Password</label>
-    <input name="password" type="password" required>
+        <label>Password</label>
+        <input name="password" type="password" required>
 
-    <div class="controls">
         <input type="submit" value="Create Account">
-    </div>
 
-</form>
-
-<p>Already have an account? Login <a href="form-login.php">here</a></p>
-
+        <footer>
+            Already have an account? <a href="form-login.php">Login here</a>
+        </footer>
+    </form>
+</section>
 
 <?php
 

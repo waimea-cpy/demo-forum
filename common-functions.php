@@ -5,21 +5,30 @@
  * Steve Copley
  * Digital Technologies Dept.
  * 
- * Version: 2.2 (March 2022)
+ * Version: 2.6 (August 2022)
  * 
  * Functions to:
  *   - Connect to MySQL server databases
  *   - Run queries to obtain or modify data in a MySQL DB
  *   - Handle errors with the MySQL operations gracefully
  *   - Upload files / images to the server
- *   - Displaying debug info / messages
+ *   - Check for a valid URL
+ *   - Configure file download output streams
+ *   - Display debug info / messages
  * 
  *------------------------------------------------------------- 
  * History:
  * 
+ *  2.6 (2022-08-10) - More robust error checking / feedback for get/update
+ *                     records. Plus can now just pass a single data variable
+ *                     without needing to place it into an array
+ *  2.5 (2022-06-22) - Added functions to support file downloads
+ *  2.4 (2022-06-20) - Image uploading now allows SVGs
+ *  2.3 (2022-03-21) - Added a function to check if a given URL is valid
  *  2.2 (2022-03-15) - Added check for folder trailing slash in file upload
  *  2.1 (2022-03-03) - Added session name to session info display
  *  2.0 (2022-02-16) - Code cleanup, new DB config file format, more defaults
+ *
  *  1.7 (2021-08-23) - Fixed some CSS bugs in the debug panel
  *  1.6 (2021-07-06) - Fixed a bug in the modifyRecords function
  *  1.5 (2021-07-28) - Fixed a bug in the redirect function for GET URLS
@@ -118,8 +127,8 @@ function addRedirect( $delay=3000, $location='index.php' ) {
  * 
  * Arguments: $sql - an SQL query string
  *            $format - an optional format string (e.g. 'ssii')
- *            $params - an optional array of data parameters to
- *                      bind into the query, matching the 
+ *            $params - an optional data value or  array of data
+ *                      to bind into the query, matching the 
  *                      format string above
  *
  * Returns: the an array of records
@@ -138,10 +147,15 @@ function getRecords( $sql, $format=null, $params=null ) {
     $query = $link->prepare( $sql );
     if( !$query ) showErrorAndDie( 'Preparing database query: '.$link->error );
 
+    // Check SQL, format and data all match up
+    checkQueryAndData( $sql, $format, $params );
+    
     // Do we have data and a format for the prepared statement?
-    if( $format && $params && strlen( $format ) == count( $params ) ) {
-        // Yes, so add in the data to the query
-        $query->bind_param( $format, ...$params );
+    if( $format && $params ) {
+        // Have we got an array of data? If so, decompose the array and bind in
+        if( is_array( $params ) ) $query->bind_param( $format, ...$params );
+        // Otherwise just bind in the single data value
+        else $query->bind_param( $format, $params );
     }
 
     // Run the query
@@ -172,8 +186,8 @@ function getRecords( $sql, $format=null, $params=null ) {
  *
  * Arguments: $sql - an SQL query string
  *            $format - an optional format string (e.g. 'ssii')
- *            $params - an optional array of data parameters to
- *                      bind into the query, matching the 
+ *            $params - an optional data value or  array of data
+ *                      to bind into the query, matching the 
  *                      format string above
  *
  * Returns: the new ID if an INSERT query, otherwise null
@@ -188,10 +202,15 @@ function modifyRecords( $sql, $format=null, $params=null ) {
     $query = $link->prepare( $sql );
     if( !$query ) showErrorAndDie( 'Preparing database query: '.$link->error );
 
+    // Check SQL, format and data all match up
+    checkQueryAndData( $sql, $format, $params );
+    
     // Do we have data and a format for the prepared statement?
-    if( $format && $params && strlen( $format ) == count( $params ) ) {
-        // Yes, so add in the data to the query
-        $query->bind_param( $format, ...$params );
+    if( $format && $params ) {
+        // Have we got an array of data? If so, decompose the array and bind in
+        if( is_array( $params ) ) $query->bind_param( $format, ...$params );
+        // Otherwise just bind in the single data value
+        else $query->bind_param( $format, $params );
     }
 
     // Run the query
@@ -207,6 +226,32 @@ function modifyRecords( $sql, $format=null, $params=null ) {
 
     // Return the ID of nay INSERTed record
     return $newID;
+}
+
+
+/*-------------------------------------------------------------
+ * Validates an SQL string, data format string and data value(s)
+ * quitting if a disceprency is found between them
+ *
+ * Arguments: $sql - an SQL query string
+ *            $format - a format string (e.g. 'ssii')
+ *            $params - a data value or array of data values
+ *-------------------------------------------------------------*/
+function checkQueryAndData( $sql, $format, $params ) {
+    // Find number of data markers (?) in $sql
+    $markerCount = substr_count( $sql, '?' );
+    // Find length of data types, if present
+    $formatCount = $format ? strlen( $format ) : 0;
+    // Find number of data items, if present
+    $dataCount = $params ? (is_array( $params ) ? count( $params ) : 1) : 0;
+
+    // Check if everything matches up
+    if( $markerCount != $formatCount || $markerCount != $dataCount ) showErrorAndDie( <<<EOD
+        Mismatch between number of data markers in SQL ('?' count: $markerCount), 
+        length of format string (length of '$format': $formatCount), 
+        and number of data values provided (data values: $dataCount)
+        EOD
+    );
 }
 
 
@@ -297,19 +342,114 @@ function uploadImage( $image, $folder, $random=false ) {
     // Check image file size is not too large (2MB max on server)
     if( $imageError == 1 || $imageSize > 2000000 ) showErrorAndDie( 'The image file is too large (2MB max)' );
 
-    // Check if image is an actual image
-    $validImage = getimagesize( $imageTempName );
-    if( !$validImage ) showErrorAndDie( 'The file does not contain image data' );
+    // Check if image is an actual image (excluding SVG which are text files)
+    if( $imageType != 'image/svg+xml' ) {
+        $validImage = getimagesize( $imageTempName );
+        if( !$validImage ) showErrorAndDie( 'The file does not contain image data' );
+    }
 
     // Check the image is of a suitable type
-    if( $imageType != 'image/png' &&
+    if( $imageType != 'image/svg+xml' &&
+        $imageType != 'image/png' &&
         $imageType != 'image/jpeg' &&
         $imageType != 'image/gif' &&
-        $imageType != 'image/webp' ) showErrorAndDie( 'Only JPEG, JFIF, WEBP, PNG or GIF images are allowed' );
+        $imageType != 'image/webp' ) showErrorAndDie( 'Only JPEG, JFIF, WEBP, PNG, GIF and SVG images are allowed' );
 
     return uploadFile( $image, $folder, $random );
 }
 
+
+/*-------------------------------------------------------------
+ * Check if a URL exists or not
+ *
+ * Requires: The host, username, password and database details in 
+ *           the same config .ini file used by connectToDB
+ *
+ * Argument: $url      - The URL of the file to check
+ *           $relative - true if URL is relative to current script 
+ *           $auth     - true if Basic Auth via user/pass required 
+ *           $iniFile  - filename of the config .ini file
+ *                       defaults to .db.ini within same directory
+ *
+ * Returns: true if URL exists, false otherwise
+ *-------------------------------------------------------------*/
+function urlExists( $url, $relative=true, $auth=true, $iniFile='.db.ini' ) {
+
+    $config = parse_ini_file( $iniFile, true );  // Load config values from file
+
+    // Setup the access context with authentication if required
+    stream_context_set_default( array( 
+        'http' => array( 
+            'method' => 'GET',
+            'header' => $auth ? 'Authorization: Basic '.base64_encode( $config['user'].':'.$config['pass'] ) : ''
+        ) 
+    ) );
+
+    if( $relative ) {
+        // Get HTTP(S)
+        $protocol = ((!empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] != 'off') || $_SERVER['SERVER_PORT'] == 443) ? 'https://' : 'http://';
+        // Work out URL base path (no filename)
+        $path = $protocol.$_SERVER['HTTP_HOST'].dirname($_SERVER['PHP_SELF']);
+        // Add it to the front of the URL
+        $url = $path.'/'.$url;
+    }
+
+    // Attempt to access URL
+    $headers = @get_headers( $url );
+    
+    // Nothing back?
+    if( $headers == false ) return false;
+
+    // Check status code
+    $status = substr( $headers[0], 9, 3 );
+
+    // 200-399 is good
+    return $status >= 200 && $status < 400;
+}
+
+
+/*-------------------------------------------------------------
+ * Setup an output stream to write to for a file download
+ *
+ * Argument: $filename - The download filename, no extension
+ *           $type     - The download file type, text-based
+ *                       txt  - plain text
+ *                       csv  - CSV data
+ *                       json - JSON data
+ * 
+ * Note: regardless of the type, you still have to output the
+ *       actual data in the appropriate format using fputs(), 
+ *       fputcsv(), json_encode(), etc. 
+ *
+ * Returns: the output stream file handle
+ *-------------------------------------------------------------*/
+function prepareDownload( $filename='data', $type='txt' ) {
+    $type = strtolower( $type );
+    
+        if( $type == 'txt'  ) $mimetype = 'text/plain';
+    elseif( $type == 'csv'  ) $mimetype = 'text/csv';
+    elseif( $type == 'json' ) $mimetype = 'application/json';
+    else showErrorAndDie( 'Invalid data type' );
+
+    header( 'Content-Type: '.$mimetype.'; charset=utf-8' );
+    header( 'Content-Disposition: attachment; filename='.$filename.'.'.$type );
+    header( 'Pragma: no-cache' );
+    header( 'Expires: 0' );
+    
+    $handle = fopen( 'php://output', 'w' );
+
+    return $handle;
+}
+
+
+/*-------------------------------------------------------------
+ * Close an output stream for a file download
+ *
+ * Argument: $handle - The output stream handle
+ *-------------------------------------------------------------*/
+function finaliseDownload( $handle ) {
+    fclose( $handle );
+}
 
 
 /*-------------------------------------------------------------

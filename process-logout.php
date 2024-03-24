@@ -1,6 +1,6 @@
 <?php
 
-    require_once 'common-top.php';
+    require_once 'common-session.php';
 
     session_destroy();
 
